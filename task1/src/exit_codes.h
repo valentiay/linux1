@@ -1,0 +1,12 @@
+#ifndef TASK1_EXIT_CODES_H
+#define TASK1_EXIT_CODES_H
+
+#define NO_SPACE -1
+#define READ_FAILURE -2
+#define WRITE_FAILURE -3
+#define TOO_SMALL_BUFFER -4
+#define WRONG_FILE_TYPE -5
+#define NOT_FOUND -6
+#define WRONG_INPUT -7
+
+#endif //TASK1_EXIT_CODES_H
