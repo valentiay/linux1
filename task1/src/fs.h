@@ -13,6 +13,8 @@ int fs_add(struct FS *fs, char *path, char *content, size_t content_length);
 
 int fs_update(struct FS *fs, char *path, char *content, size_t content_length);
 
+//int fs_size(struct FS *fs, char *path);
+
 int fs_read(struct FS *fs, char *path);
 
 int fs_remove(struct FS *fs, char *path);

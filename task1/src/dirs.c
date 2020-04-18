@@ -11,15 +11,12 @@ int dir_init(struct FS *fs) {
 int dir_add(struct FS *fs, char *filename, size_t file_inode_idx, size_t dir_inode_idx) {
     size_t filename_size = strlen(filename) + 1;
 
-    size_t buffer_size = fs->super_block.block_size + sizeof(size_t) + filename_size;
+    int buffer_size = file_size(fs, dir_inode_idx) + sizeof(size_t) + filename_size;
+    if (buffer_size < 0) return buffer_size;
+
     char *buffer = malloc(buffer_size);
 
-    int res = file_read(fs, dir_inode_idx, buffer, &buffer_size, 1);
-    if (res == TOO_SMALL_BUFFER) {
-        free(buffer);
-        buffer = malloc(buffer_size + sizeof(size_t) + filename_size);
-        res = file_read(fs, dir_inode_idx, buffer, &buffer_size, 1);
-    }
+    int res = file_read(fs, dir_inode_idx, buffer, buffer_size, 1);
     if (res < 0) {
         free(buffer);
         return res;
@@ -36,16 +33,12 @@ int dir_add(struct FS *fs, char *filename, size_t file_inode_idx, size_t dir_ino
 }
 
 int dir_remove_rec(struct FS *fs, size_t dir_inode_idx) {
-    size_t buffer_size = fs->super_block.block_size;
+    int buffer_size = file_size(fs, dir_inode_idx);
+    if (buffer_size < 0) return 0;
+
     char *buffer = malloc(buffer_size);
 
-    int res;
-    res = file_read(fs, dir_inode_idx, buffer, &buffer_size, 1);
-    if (res == TOO_SMALL_BUFFER) {
-        free(buffer);
-        buffer = malloc(buffer_size);
-        res = file_read(fs, dir_inode_idx, buffer, &buffer_size, 1);
-    }
+    int res = file_read(fs, dir_inode_idx, buffer, buffer_size, 1);
     if (res < 0) {
         free(buffer);
         return res;
@@ -75,16 +68,12 @@ int dir_remove_rec(struct FS *fs, size_t dir_inode_idx) {
 }
 
 int dir_remove_file(struct FS *fs, char *filename, size_t dir_inode_idx) {
-    size_t buffer_size = fs->super_block.block_size;
+    int buffer_size = file_size(fs, dir_inode_idx);
+    if(buffer_size < 0) return buffer_size;
+
     char *buffer = malloc(buffer_size);
 
-    int res;
-    res = file_read(fs, dir_inode_idx, buffer, &buffer_size, 1);
-    if (res == TOO_SMALL_BUFFER) {
-        free(buffer);
-        buffer = malloc(buffer_size);
-        res = file_read(fs, dir_inode_idx, buffer, &buffer_size, 1);
-    }
+    int res = file_read(fs, dir_inode_idx, buffer, buffer_size, 1);
     if (res < 0) {
         free(buffer);
         return res;
@@ -128,15 +117,12 @@ int dir_remove_file(struct FS *fs, char *filename, size_t dir_inode_idx) {
 }
 
 int dir_list(struct FS *fs, size_t dir_inode_idx) {
-    size_t buffer_size = fs->super_block.block_size;
+    int buffer_size = file_size(fs, dir_inode_idx);
+    if (buffer_size < 0) return buffer_size;
+
     char *buffer = malloc(buffer_size);
 
-    int res = file_read(fs, dir_inode_idx, buffer, &buffer_size, 1);
-    if (res == TOO_SMALL_BUFFER) {
-        free(buffer);
-        buffer = malloc(buffer_size);
-        res = file_read(fs, dir_inode_idx, buffer, &buffer_size, 1);
-    }
+    int res = file_read(fs, dir_inode_idx, buffer, buffer_size, 1);
     if (res < 0) {
         free(buffer);
         return res;
@@ -156,16 +142,12 @@ int dir_list(struct FS *fs, size_t dir_inode_idx) {
 }
 
 int dir_find(struct FS *fs, char *filename, size_t dir_inode_idx) {
-    size_t buffer_size = fs->super_block.block_size;
+    int buffer_size = file_size(fs, dir_inode_idx);
+    if (buffer_size < 0) return buffer_size;
+
     char *buffer = malloc(buffer_size);
 
-    int res;
-    res = file_read(fs, dir_inode_idx, buffer, &buffer_size, 1);
-    if (res == TOO_SMALL_BUFFER) {
-        free(buffer);
-        buffer = malloc(buffer_size);
-        res = file_read(fs, dir_inode_idx, buffer, &buffer_size, 1);
-    }
+    int res = file_read(fs, dir_inode_idx, buffer, buffer_size, 1);
     if (res < 0) {
         free(buffer);
         return res;

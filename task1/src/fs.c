@@ -104,6 +104,35 @@ int fs_update(struct FS *fs, char *path, char *content, size_t content_length) {
     return 0;
 }
 
+//int fs_size(struct FS *fs, char *path) {
+//    size_t current_dir_inode_idx = 0;
+//    size_t word_start = 1;
+//    size_t path_length = strlen(path);
+//    int res;
+//
+//    if (path[0] != '/') return NOT_FOUND;
+//    for (size_t i = 1; i < path_length; i++) {
+//        if (path[i] == '/') {
+//            if (i - word_start == 0) return NOT_FOUND;
+//            char *dirname = malloc(i - word_start + 1);
+//            memcpy(dirname, path + word_start, i - word_start);
+//            dirname[i - word_start] = '\0';
+//            printf("%s\n", dirname);
+//            res = dir_find(fs, dirname, current_dir_inode_idx);
+//            free(dirname);
+//            if (res < 0) return res;
+//            current_dir_inode_idx = res;
+//            word_start = i + 1;
+//        }
+//    }
+//
+//    if (path[path_length - 1] != '/') {
+//        return file_size(fs, current_dir_inode_idx);
+//    } else {
+//        return dir_size(fs, current_dir_inode_idx);
+//    }
+//}
+
 int fs_read(struct FS *fs, char *path) {
     size_t current_dir_inode_idx = 0;
     size_t word_start = 1;
@@ -127,17 +156,12 @@ int fs_read(struct FS *fs, char *path) {
     }
 
     if (path[path_length - 1] != '/') {
-        size_t buffer_size = fs->super_block.block_size + 1;
+        int buffer_size = file_size(fs, current_dir_inode_idx);
+        if (buffer_size < 0) return buffer_size;
         char *buffer = malloc(buffer_size);
 
         size_t file_inode_idx = dir_find(fs, path + word_start, current_dir_inode_idx);
-        res = file_read(fs, file_inode_idx, buffer, &buffer_size, 0);
-        if (res == TOO_SMALL_BUFFER) {
-            free(buffer);
-            buffer_size++;
-            buffer = malloc(buffer_size);
-            res = file_read(fs, file_inode_idx, buffer, &buffer_size, 0);
-        }
+        res = file_read(fs, file_inode_idx, buffer, buffer_size, 0);
         if (res < 0) {
             free(buffer);
             return res;

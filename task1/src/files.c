@@ -183,7 +183,16 @@ int file_remove(struct FS *fs, size_t inode_idx, size_t dir_flag) {
     return 0;
 }
 
-int file_read(struct FS *fs, size_t inode_idx, char *content, size_t *content_length, size_t dir_flag) {
+int file_size(struct FS* fs, size_t inode_idx) {
+    if (bitmap_read(fs->file, fs->inode_bitmap_offset, inode_idx) == 0) return NOT_FOUND;
+
+    fseek(fs->file, fs->inode_table_offset + inode_idx * fs->super_block.inode_size + sizeof(size_t), SEEK_SET);
+    size_t content_length;
+    if (fread(&content_length, sizeof(size_t), 1, fs->file) != 1) return READ_FAILURE;
+    return content_length;
+}
+
+int file_read(struct FS *fs, size_t inode_idx, char *content, size_t content_length, size_t dir_flag) {
     size_t new_content_length;
     size_t new_dir_flag;
 
@@ -193,8 +202,7 @@ int file_read(struct FS *fs, size_t inode_idx, char *content, size_t *content_le
     if (fread(&new_dir_flag, sizeof(size_t), 1, fs->file) != 1) return READ_FAILURE;
     if (new_dir_flag != dir_flag) return WRONG_FILE_TYPE;
     if (fread(&new_content_length, sizeof(size_t), 1, fs->file) != 1) return READ_FAILURE;
-    if (new_content_length > *content_length) {
-        *content_length = new_content_length;
+    if (new_content_length > content_length) {
         return TOO_SMALL_BUFFER;
     }
     size_t blocks_required = new_content_length / fs->super_block.block_size + 1;
@@ -217,8 +225,6 @@ int file_read(struct FS *fs, size_t inode_idx, char *content, size_t *content_le
         free(block_idxs);
         return READ_FAILURE;
     }
-
-    *content_length = new_content_length;
 
     free(block_idxs);
     return 0;
