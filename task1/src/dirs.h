@@ -11,7 +11,9 @@ int dir_remove_rec(struct FS *fs, size_t dir_inode_idx);
 
 int dir_remove_file(struct FS *fs, char *filename, size_t dir_inode_idx);
 
-int dir_list(struct FS *fs, size_t dir_inode_idx);
+int dir_size(struct FS *fs, size_t dir_inode_idx);
+
+int dir_list(struct FS *fs, size_t dir_inode_idx, char *content, size_t content_length);
 
 int dir_find(struct FS *fs, char *filename, size_t dir_inode_idx);
 

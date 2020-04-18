@@ -183,13 +183,28 @@ int file_remove(struct FS *fs, size_t inode_idx, size_t dir_flag) {
     return 0;
 }
 
-int file_size(struct FS* fs, size_t inode_idx) {
+int file_is_dir(struct FS* fs, size_t inode_idx) {
     if (bitmap_read(fs->file, fs->inode_bitmap_offset, inode_idx) == 0) return NOT_FOUND;
 
-    fseek(fs->file, fs->inode_table_offset + inode_idx * fs->super_block.inode_size + sizeof(size_t), SEEK_SET);
-    size_t content_length;
-    if (fread(&content_length, sizeof(size_t), 1, fs->file) != 1) return READ_FAILURE;
-    return content_length;
+    size_t new_dir_flag;
+
+    fseek(fs->file, fs->inode_table_offset + inode_idx * fs->super_block.inode_size, SEEK_SET);
+    if (fread(&new_dir_flag, sizeof(size_t), 1, fs->file) != 1) return READ_FAILURE;
+    return new_dir_flag;
+}
+
+int file_size(struct FS* fs, size_t inode_idx, size_t dir_flag) {
+    if (bitmap_read(fs->file, fs->inode_bitmap_offset, inode_idx) == 0) return NOT_FOUND;
+
+    size_t new_dir_flag;
+
+    fseek(fs->file, fs->inode_table_offset + inode_idx * fs->super_block.inode_size, SEEK_SET);
+    if (fread(&new_dir_flag, sizeof(size_t), 1, fs->file) != 1) return READ_FAILURE;
+    if (new_dir_flag != dir_flag) return WRONG_FILE_TYPE;
+
+    size_t new_content_length;
+    if (fread(&new_content_length, sizeof(size_t), 1, fs->file) != 1) return READ_FAILURE;
+    return new_content_length;
 }
 
 int file_read(struct FS *fs, size_t inode_idx, char *content, size_t content_length, size_t dir_flag) {

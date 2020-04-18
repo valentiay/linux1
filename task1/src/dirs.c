@@ -11,7 +11,8 @@ int dir_init(struct FS *fs) {
 int dir_add(struct FS *fs, char *filename, size_t file_inode_idx, size_t dir_inode_idx) {
     size_t filename_size = strlen(filename) + 1;
 
-    size_t dir_size = file_size(fs, dir_inode_idx);
+    size_t dir_size = file_size(fs, dir_inode_idx, 1);
+    if (dir_size < 0) return dir_size;
     int buffer_size = dir_size + sizeof(size_t) + filename_size;
     if (buffer_size < 0) return buffer_size;
 
@@ -39,7 +40,7 @@ int dir_add(struct FS *fs, char *filename, size_t file_inode_idx, size_t dir_ino
 }
 
 int dir_remove_rec(struct FS *fs, size_t dir_inode_idx) {
-    int buffer_size = file_size(fs, dir_inode_idx);
+    int buffer_size = file_size(fs, dir_inode_idx, 1);
     if (buffer_size < 0) return 0;
 
     char *buffer = malloc(buffer_size);
@@ -74,7 +75,7 @@ int dir_remove_rec(struct FS *fs, size_t dir_inode_idx) {
 }
 
 int dir_remove_file(struct FS *fs, char *filename, size_t dir_inode_idx) {
-    int buffer_size = file_size(fs, dir_inode_idx);
+    int buffer_size = file_size(fs, dir_inode_idx, 1);
     if(buffer_size < 0) return buffer_size;
 
     char *buffer = malloc(buffer_size);
@@ -127,8 +128,21 @@ int dir_remove_file(struct FS *fs, char *filename, size_t dir_inode_idx) {
     return 0;
 }
 
-int dir_list(struct FS *fs, size_t dir_inode_idx) {
-    int buffer_size = file_size(fs, dir_inode_idx);
+int dir_size(struct FS *fs, size_t dir_inode_idx) {
+    int size = file_size(fs, dir_inode_idx, 1);
+    if (size < 0) return size;
+
+    char* buffer = malloc(size);
+    file_read(fs, dir_inode_idx, buffer, size, 1);
+
+    size_t dir_size;
+    memcpy(&dir_size, buffer, sizeof(size_t));
+
+    return size - (dir_size + 1) * sizeof(size_t) + dir_size * 46 + 100;
+}
+
+int dir_list(struct FS *fs, size_t dir_inode_idx, char *content, size_t content_length) {
+    int buffer_size = file_size(fs, dir_inode_idx, 1);
     if (buffer_size < 0) return buffer_size;
 
     char *buffer = malloc(buffer_size);
@@ -141,23 +155,47 @@ int dir_list(struct FS *fs, size_t dir_inode_idx) {
 
     size_t size;
     memcpy(&size, buffer, sizeof(size_t));
-    printf("Size: %lu\n", size);
+
+    size_t new_content_length = buffer_size - (size + 1) * sizeof(size_t) + size * 46 + 100;
+    if (content_length < new_content_length) {
+        free(buffer);
+        return TOO_SMALL_BUFFER;
+    }
+
+    sprintf(content, "Dir %lu, size %lu\nidx\tdir\tsiz\tname\n", dir_inode_idx, size);
+    size_t str_offset = strlen(content);
 
     size_t i = sizeof(size_t);
     while (i < buffer_size) {
         size_t file_inode_idx;
         memcpy(&file_inode_idx, buffer + i, sizeof(size_t));
+        int dir_flag = file_is_dir(fs, file_inode_idx);
+        int f_size = file_size(fs, file_inode_idx, dir_flag);
+        if (f_size < 0) {
+            free(buffer);
+            return f_size;
+        }
         i += sizeof(size_t);
-        printf("%lu: %s\n", file_inode_idx, buffer + i);
+
+        if (dir_flag == 1) {
+            sprintf(content + str_offset, "%lu\t%s\t%d\t", file_inode_idx, "d", f_size);
+        } else {
+            sprintf(content + str_offset, "%lu\t%s\t%d\t", file_inode_idx, "f", f_size);
+        }
+        str_offset += strlen(content + str_offset);
         size_t filename_size = strlen(buffer + i) + 1;
+        memcpy(content + str_offset, buffer + i, filename_size);
+        str_offset += filename_size;
+        content[str_offset - 1] = '\n';
         i += filename_size;
     }
+    content[str_offset] = '\0';
     free(buffer);
     return 0;
 }
 
 int dir_find(struct FS *fs, char *filename, size_t dir_inode_idx) {
-    int buffer_size = file_size(fs, dir_inode_idx);
+    int buffer_size = file_size(fs, dir_inode_idx, 1);
     if (buffer_size < 0) return buffer_size;
 
     char *buffer = malloc(buffer_size);

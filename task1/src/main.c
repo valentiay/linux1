@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -56,7 +57,15 @@ int main(int argc, char *argv[]) {
         if (strcmp(buf1, "read") == 0) {
             printf("[read] path> ");
             readline(buf1, buf1_size);
-            handle_error(fs_read(&fs, buf1));
+            int size = fs_size(&fs, buf1);
+            if (size >= 0) {
+                char* content = malloc(size);
+                handle_error(fs_read(&fs, buf1, content, size));
+                printf("%s", content);
+                free(content);
+            } else {
+                handle_error(size);
+            }
         } else if (strcmp(buf1, "add") == 0) {
             printf("[add] path> ");
             readline(buf1, buf1_size);

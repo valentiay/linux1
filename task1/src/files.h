@@ -35,7 +35,9 @@ int file_update(struct FS *fs, size_t inode_idx, char *content, size_t new_conte
 
 int file_remove(struct FS *fs, size_t inode_idx, size_t dir_flag);
 
-int file_size(struct FS* fs, size_t inode_idx);
+int file_is_dir(struct FS* fs, size_t inode_idx);
+
+int file_size(struct FS* fs, size_t inode_idx, size_t dir_flag);
 
 int file_read(struct FS *fs, size_t inode_idx, char *content, size_t content_length, size_t dir_flag);
 
