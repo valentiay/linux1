@@ -220,53 +220,56 @@ int fs_remove(struct FS *fs, char *path) {
     return 0;
 }
 
-int fs_init(FILE *file) {
-    struct SuperBlock super_block = init_default_super_block();
-    fwrite(&super_block, sizeof(struct SuperBlock), 1, file);
+int fs_init(struct FS *fs) {
+    fwrite(&(fs->super_block), sizeof(struct SuperBlock), 1, fs->file);
 
-    size_t inode_bitmap_length = super_block.inodes_number / 8 + 1;
-    size_t blocks_bitmap_length = super_block.blocks_number / 8 + 1;
-    size_t inode_table_length = super_block.inode_size * super_block.inodes_number;
-    size_t blocks_table_length = super_block.block_size * super_block.blocks_number;
-
-    size_t total_length = inode_bitmap_length + blocks_bitmap_length + inode_table_length + blocks_table_length;
+    size_t total_length =
+            fs->inode_bitmap_length +
+            fs->blocks_bitmap_length +
+            fs->inode_table_length +
+            fs->blocks_table_length;
 
     char *bytes = malloc(total_length);
     memset(bytes, 0, total_length);
-    fwrite(bytes, total_length, 1, file);
+    fwrite(bytes, total_length, 1, fs->file);
     free(bytes);
 
-    if (dir_init(file) != 0) return WRITE_FAILURE;
+    if (dir_init(fs) != 0) return WRITE_FAILURE;
     return 0;
 }
 
 int fs_open(struct FS *fs, char *filename) {
     FILE *file;
-    if (access(filename, F_OK) != -1) {
+
+    int file_exists = access(filename, F_OK) != -1;
+
+    if (file_exists) {
         file = fopen(filename, "rb+");
-        if (file == NULL) return READ_FAILURE;
+        struct SuperBlock super_block;
+        if (fread(&super_block, sizeof(struct SuperBlock), 1, file) != 1) return READ_FAILURE;
+        fs->super_block = super_block;
     } else {
         file = fopen(filename, "wb+");
-        if (file == NULL) return READ_FAILURE;
-        int res = fs_init(file);
-        if (res < 0) return res;
+        fs->super_block = init_default_super_block();
     }
 
+    if (file == NULL) return READ_FAILURE;
+
     fs->file = file;
-
-    struct SuperBlock super_block;
-    if (fread(&super_block, sizeof(struct SuperBlock), 1, file) != 1) return READ_FAILURE;
-    fs->super_block = super_block;
-
-    fs->inode_bitmap_length = super_block.inodes_number / 8 + 1;
-    fs->blocks_bitmap_length = super_block.blocks_number / 8 + 1;
-    fs->inode_table_length = super_block.inode_size * super_block.inodes_number;
-    fs->blocks_table_length = super_block.block_size * super_block.blocks_number;
+    fs->inode_bitmap_length = fs->super_block.inodes_number / 8 + 1;
+    fs->blocks_bitmap_length = fs->super_block.blocks_number / 8 + 1;
+    fs->inode_table_length = fs->super_block.inode_size * fs->super_block.inodes_number;
+    fs->blocks_table_length = fs->super_block.block_size * fs->super_block.blocks_number;
 
     fs->inode_bitmap_offset = sizeof(struct SuperBlock);
     fs->blocks_bitmap_offset = fs->inode_bitmap_offset + fs->inode_bitmap_length;
     fs->inode_table_offset = fs->blocks_bitmap_offset + fs->blocks_bitmap_length;
     fs->blocks_table_offset = fs->inode_table_offset + fs->inode_table_length;
+
+    if (!file_exists) {
+        int res = fs_init(fs);
+        if (res < 0) return res;
+    }
 
     return 0;
 }

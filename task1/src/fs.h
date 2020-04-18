@@ -19,7 +19,7 @@ int fs_read(struct FS *fs, char *path);
 
 int fs_remove(struct FS *fs, char *path);
 
-int fs_init(FILE *file);
+int fs_init(struct FS *file);
 
 int fs_open(struct FS *fs, char *filename);
 
