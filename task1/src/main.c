@@ -38,8 +38,8 @@ void handle_error(int res) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        fprintf(stderr, "Program must take exactly 1 argument!");
+    if (argc < 2) {
+        printf("Use: %s [filename]\n", argv[0]);
         return 1;
     }
 
@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
             readline(buf1, buf1_size);
             handle_error(fs_remove(&fs, buf1));
         } else if (strcmp(buf1, "exit") == 0) {
-            close_fs(&fs);
+            fs_close(&fs);
             return 0;
         } else {
             printf("Unknown command: %s\n", buf1);

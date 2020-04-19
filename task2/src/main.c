@@ -1,15 +1,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <signal.h>
+#include <sys/stat.h>
 
 #include "../../task1/src/fs.h"
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
+
+int server_fd, client_fd;
+
+struct FS fs;
+
+void termination_handler(int signum) {
+    printf("Shutting down: %d\n", signum);
+    shutdown(client_fd, SHUT_RDWR);
+    close(client_fd);
+    close(server_fd);
+    fs_close(&fs);
+    exit(1);
+}
 
 void handle_error(int client_fd, int res) {
     switch (res) {
@@ -40,17 +54,34 @@ void handle_error(int client_fd, int res) {
 }
 
 int main (int argc, char *argv[]) {
+    pid_t pid;
+
+    pid = fork();
+
+    if (pid < 0) return 1;
+    if (pid > 0) return 0;
+    if (setsid() < 0) return 1;
+
+    signal(SIGINT, termination_handler);
+    signal(SIGTERM, termination_handler);
+
+    pid = fork();
+
+    if (pid < 0) return 1;
+    if (pid > 0) return 0;
+
+    umask(0);
+
     if (argc < 2) {
         printf("Use: %s [filename] [port]\n", argv[0]);
         return 1;
     }
 
-    struct FS fs;
     fs_open(&fs, argv[1]);
 
     int port = atoi(argv[2]);
 
-    int server_fd, client_fd, res;
+    int res;
     struct sockaddr_in server, client;
     const size_t buffer_size = 8096;
     char buffer[buffer_size];
@@ -154,7 +185,7 @@ int main (int argc, char *argv[]) {
             } else if (strcmp(command, "remove") == 0) {
                 handle_error(client_fd, fs_remove(&fs, path));
             } else if (strcmp(command, "exit") == 0) {
-                close_fs(&fs);
+                fs_close(&fs);
                 close(server_fd);
                 return 0;
             } else {

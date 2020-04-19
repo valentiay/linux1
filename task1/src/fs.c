@@ -95,8 +95,8 @@ int fs_update(struct FS *fs, char *path, char *content, size_t content_length) {
         if (file_inode_idx < 0) return file_inode_idx;
         res = file_update(fs, file_inode_idx, content, content_length, 0);
         if (res < 0) return res;
-        res = dir_add(fs, path + word_start, res, current_dir_inode_idx);
-        if (res < 0) return res;
+    } else {
+        return WRONG_FILE_TYPE;
     }
 
     return 0;
@@ -258,7 +258,7 @@ int fs_open(struct FS *fs, char *filename) {
     return 0;
 }
 
-int close_fs(struct FS *fs) {
+int fs_close(struct FS *fs) {
     if (fclose(fs->file) < 0) return WRITE_FAILURE;
     return 0;
 }

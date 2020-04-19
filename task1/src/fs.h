@@ -23,7 +23,7 @@ int fs_init(struct FS *file);
 
 int fs_open(struct FS *fs, char *filename);
 
-int close_fs(struct FS *fs);
+int fs_close(struct FS *fs);
 
 void dump_super_block(struct SuperBlock *super_block);
 
