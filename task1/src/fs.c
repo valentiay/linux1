@@ -124,7 +124,10 @@ int fs_size(struct FS *fs, char *path) {
     }
 
     if (path[path_length - 1] != '/') {
-        return file_size(fs, current_dir_inode_idx, 0);
+        int buffer_size = file_size(fs, current_dir_inode_idx, 1);
+        if (buffer_size < 0) return buffer_size;
+        size_t file_inode_idx = dir_find(fs, path + word_start, current_dir_inode_idx);
+        return file_size(fs, file_inode_idx, 0);
     } else {
         return dir_size(fs, current_dir_inode_idx);
     }
@@ -152,7 +155,10 @@ int fs_read(struct FS *fs, char *path, char *content, size_t content_length) {
     }
 
     if (path[path_length - 1] != '/') {
-        return file_read(fs, current_dir_inode_idx, content, content_length, 0);
+        int buffer_size = file_size(fs, current_dir_inode_idx, 1);
+        if (buffer_size < 0) return buffer_size;
+        size_t file_inode_idx = dir_find(fs, path + word_start, current_dir_inode_idx);
+        return file_read(fs, file_inode_idx, content, content_length, 0);
     } else {
         return dir_list(fs, current_dir_inode_idx, content, content_length);
     }
