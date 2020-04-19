@@ -3,9 +3,8 @@ project(task1 C)
 
 set(CMAKE_C_STANDARD 11)
 
-add_executable(
-        task1
-        src/main.c
+add_library(
+        minifs_lib
         src/bitmaps.c
         src/files.c
         src/dirs.c
@@ -16,3 +15,10 @@ add_executable(
         src/dirs.h
         src/fs.h
 )
+
+add_executable(
+        task1
+        src/main.c
+)
+
+target_link_libraries(task1 PUBLIC minifs_lib)
